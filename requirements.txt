@@ -1,2 +1,3 @@
-google-generativeai
+Flask
 requests
+google-generativeai
