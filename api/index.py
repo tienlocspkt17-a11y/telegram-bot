@@ -51,13 +51,23 @@ def webhook(path):
         print(f"Lỗi AI: {e}")
         reply_text = "Hệ thống AI đang phản hồi chậm, bạn thử lại sau nhé."
 
-    # 4. Trả lời lại qua Telegram API
+# 4. Trả lời lại qua Telegram API
     send_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {
         "chat_id": chat_id,
         "text": reply_text,
         "reply_to_message_id": message.get("message_id")
     }
-    requests.post(send_url, json=payload)
+
+    # Cập nhật: Hỗ trợ tự động trả lời đúng luồng cho các Group có bật Topics (Forum)
+    if message.get("is_topic_message") or message.get("message_thread_id"):
+        payload["message_thread_id"] = message.get("message_thread_id")
+
+    # Gửi tin nhắn và in kết quả ra Logs để bắt bệnh
+    try:
+        tg_response = requests.post(send_url, json=payload)
+        print(f"Telegram API Trả về: {tg_response.status_code} - {tg_response.text}")
+    except Exception as e:
+        print(f"Lỗi kết nối đến Telegram: {e}")
 
     return jsonify(status="ok")
