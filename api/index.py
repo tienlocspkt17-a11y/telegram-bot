@@ -43,7 +43,7 @@ def webhook(path):
     # 3. Gọi AI xử lý bằng cú pháp mới
     try:
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-flash-latest',
             contents=text
         )
         reply_text = response.text
