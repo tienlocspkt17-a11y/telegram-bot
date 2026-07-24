@@ -1,27 +1,27 @@
 import os
 import requests
 from flask import Flask, request, jsonify
-import google.generativeai as genai
+from google import genai # Sử dụng thư viện mới
 
 app = Flask(__name__)
 
-# 1. Lấy thông tin từ cấu hình Vercel
-# Hãy đảm bảo 3 dòng này y hệt như thế này, KHÔNG điền key thật vào đây
+# 1. Lấy thông tin cấu hình
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 BOT_USERNAME = os.environ.get("BOT_USERNAME")
 
-# Khởi tạo Gemini
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+# Khởi tạo Gemini Client theo chuẩn mới
+client = genai.Client(api_key=GEMINI_API_KEY)
 
-@app.route('/api', methods=['POST', 'GET'])
-def webhook():
-    # Route GET để test xem server có sống không
+# 2. Định nghĩa Route: Bắt mọi đường link để tránh lỗi 404
+@app.route('/', defaults={'path': ''}, methods=['POST', 'GET'])
+@app.route('/<path:path>', methods=['POST', 'GET'])
+def webhook(path):
+    # Nếu truy cập bằng trình duyệt (GET)
     if request.method == 'GET':
-        return "Bot is running on Vercel!"
+        return jsonify(status="Thành công", message="Bot is running and waiting for Telegram webhook!")
     
-    # 2. Xử lý tin nhắn từ Telegram (POST)
+    # Xử lý tin nhắn từ Telegram (POST)
     update = request.get_json()
     if not update or "message" not in update:
         return jsonify(status="ok")
@@ -40,9 +40,12 @@ def webhook():
     if not text:
         return jsonify(status="ok")
 
-    # 3. Gọi AI xử lý
+    # 3. Gọi AI xử lý bằng cú pháp mới
     try:
-        response = model.generate_content(text)
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=text
+        )
         reply_text = response.text
     except Exception as e:
         print(f"Lỗi AI: {e}")
@@ -57,5 +60,4 @@ def webhook():
     }
     requests.post(send_url, json=payload)
 
-    # Trả về HTTP 200 cho Telegram
     return jsonify(status="ok")
